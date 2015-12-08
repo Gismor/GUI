@@ -1,6 +1,6 @@
 package SchiebePuzzel;
 
-import javafx.scene.image.*;
+import org.omg.CORBA.INTERNAL;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
@@ -12,41 +12,39 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 
-/**
- * Created by dneubauer on 17.11.2015.
- */
+
 public class SchiebePuzzel implements ActionListener {
 
-    private static final int XX = 4;
-    private static final int YY = 3;
-    private JButton[] buttons = new JButton[XX * YY];
+    private static final int XX = 2
+            ;
+    private static final int YY = 2;
+    private JButton[] buttons = new JButton[XX*YY];
     private int lastButton = 0;
     private Icon lastIcon = null;
     private boolean firstClick = true;
 
-
-    public SchiebePuzzel() {
-        JFrame jf = new JFrame("SchiebePuzzel");
+    public SchiebePuzzel () {
+        JFrame jf = new JFrame("Schiebepuzzel");
         jf.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         jf.setLayout(new GridLayout(YY, XX));
+
         try {
-            BufferedImage bi = ImageIO.read(new File("snoopy.jpg"));
-            int w = bi.getWidth();
-            int h = bi.getHeight();
-            for (int y = 0; y < YY; y++)
-                for (int x = 0; x < XX; x++) {
-                    buttons[y * XX + x] = new JButton(
-                            new ImageIcon(
-                                    bi.getSubimage(x * (w / XX), y * (h / YY), w / XX, h / YY)));
+            BufferedImage bim = ImageIO.read(new File("snoopy.jpg"));
+            int w = bim.getWidth();
+            int h = bim.getHeight();
 
-                    buttons[y * XX + x].setBorder(new LineBorder(Color.black, 2));
-                    buttons[y * XX + x].setActionCommand("" + (y * XX + x));
-                    buttons[y * XX + x].setName("" + (y * XX + x));
-                    buttons[y * XX + x].addActionListener(this);
-                    jf.add(buttons[y * XX + x]);
+            for (int y = 0; y < YY; y++){
+                for (int x = 0; x < XX; x++){
+                    buttons[y*XX+x] = new JButton(  /*Hinzufügen von den Kacheln in das Raster*/
+                            new ImageIcon(bim.getSubimage(x*(w/XX), y*(h/YY), w/XX, h/YY))); /*um die breite / hoehe des Teilbildes zu berechnen*/
+                    int pos = y*XX+x;
+                    buttons[pos].setBorder(new LineBorder(Color.BLACK, 2));
+                    buttons[pos].setActionCommand("" + (pos)); /*position des Buttons*/
+                    buttons[pos].setName("" + (pos)); /*Pos des Icons*/
+                    buttons[pos].addActionListener(this);
+                    jf.add(buttons[pos]); /*Teilbild wird eingefuegt am gewuenschten rahmen*/
                 }
-
-
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -54,33 +52,24 @@ public class SchiebePuzzel implements ActionListener {
         jf.setVisible(true);
     }
 
-
-    public static void main(String[] args) {
-
-
-        new SchiebePuzzel();
-
-    }
-
-    private boolean isDone() {
+    /**Liefert true, wenn bei allen JButtons  in buttons der Action Command gleich dem Namen ist*/
+    private boolean isDone (){
         for (JButton b : buttons)
             if (!b.getName().equals(b.getActionCommand()))
                 return false;
         return true;
     }
 
-    private boolean inTouch(int pos) {
-        return
-                ((pos % XX == lastButton % XX) &&
-                        Math.abs(pos / XX - lastButton / XX) < 2) ||
-                        ((pos / XX == lastButton / XX) &&
-                                Math.abs(pos % XX - lastButton % XX) < 2);
+    /**Liefert true, falls der JButton an pos neben dem JButton an last Button liegt*/
+    private boolean inTouch (int pos){
+        return ((pos % XX == lastButton % XX) && Math.abs(pos / XX - lastButton / XX) <2) || ((pos / XX == lastButton / XX) && Math.abs(pos % XX - lastButton % XX) <2); /*abs ganzzahlig oder so...*/
     }
 
-    private void switchButton(int pos) {
+    /**tauscht den Namen und das Icon mit dem Zuletzt gedrückten JButton*/
+    private void switchButton (int pos){
         if (inTouch(pos)) {
             buttons[lastButton].setIcon(buttons[pos].getIcon());
-            buttons[pos].setIcon(null);
+            buttons[pos].setIcon((null)); /*So wird das "Bildchen" entfernt und der button wird frei*/
             String h = buttons[pos].getName();
             buttons[pos].setName(buttons[lastButton].getName());
             buttons[lastButton].setName(h);
@@ -89,13 +78,34 @@ public class SchiebePuzzel implements ActionListener {
     }
 
 
-    public void actionPerformed(ActionEvent e) {
+    public static void main(String[] args) {
+        new SchiebePuzzel();
+    } /*startet das Spiel*/
 
-        if(firstClick){
-            firstClick=false;
+    @Override
+    public void actionPerformed(ActionEvent e) {
+        if (firstClick){
+            firstClick = false;
+            lastIcon = buttons[0].getIcon();
             buttons[0].setIcon(null);
+            for (int i = 0; i < 10000; i++) {
+                int zufall = (int) (Math.random() * XX * YY); /*um die Bildchen zu verschieben*/
+                switchButton(zufall);
+            }
+            while (lastButton % XX != 0){/*die beiden whiles dienen nur dem Verschieben des Lochs nach links oben, also sodass das ding immer links oben ist*/
+                switchButton(lastButton-1);
+            }
+            while (lastButton /XX != 0){
+                switchButton((lastButton - XX));
+            }
         }
-        int pos = Integer.parseInt (e.getActionCommand());
-        switchButton(pos);
+        else {
+            int pos = Integer.parseInt(e.getActionCommand()); /*welcher button wurde gedrueckt?*/
+            switchButton(pos);
+            if (isDone()){
+                buttons[0].setIcon(lastIcon);
+                firstClick = true;
+            }
+        }
     }
 }
